@@ -1,19 +1,19 @@
-"""Impulsive optimization problem"""
+"""Impulsive optimal control problem"""
 
 
 mutable struct ImpulsiveProblem <: OptimalControlProblem
     N::Int
     nx::Int
     nu::Int
-    eom_stm!::Function
+    eom!::Function
     model::Model
     times::Union{Vector,LinRange}
     base_ode::ODEProblem
     gfun::Function
     ode_params
     ode_method
-    ode_reltol
-    ode_abstol
+    ode_reltol::Float64
+    ode_abstol::Float64
 end
 
 
@@ -38,7 +38,7 @@ end
 
 
 function ImpulsiveProblem(
-    eom_stm!::Function,
+    eom!::Function,
     optimizer,
     times::Union{Vector,LinRange},
     xbar::Matrix,
@@ -48,27 +48,27 @@ function ImpulsiveProblem(
     bc_implicit_final::Union{Function, Nothing},
     ode_params = nothing;
     ode_method = Tsit5(),
-    ode_reltol = 1e-12,
-    ode_abstol = 1e-12,
+    ode_reltol::Float64 = 1e-12,
+    ode_abstol::Float64 = 1e-12,
     control_parametrization = :DirMag,
 )
     # extract sizes
+    N = length(times)
     nx, _Nx = size(xbar)
     nu, _Nu = size(ubar)
-    @assert _Nx == _Nu == length(times)
+    @assert _Nx == _Nu == N
 
     # base ODE problem
     base_ode = ODEProblem(
-        eom_stm!, ones(nx), (0.0, 1.0), ode_params
+        eom!, ones(nx), (0.0, 1.0), ode_params
     )
 
     # instantiate problem struct
-    N = length(times)
     prob = ImpulsiveProblem(
         N,
         nx,
         nu,
-        eom_stm!, 
+        eom!, 
         Model(optimizer),
         times,
         base_ode,
@@ -117,7 +117,6 @@ function ImpulsiveProblem(
     @objective(prob.model, Min, sum(u[4,:]))
     return prob
 end
-
 
 
 """Extract trajectory from impulsive problem"""

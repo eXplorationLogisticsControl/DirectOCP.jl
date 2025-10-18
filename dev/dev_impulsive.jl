@@ -63,7 +63,7 @@ sol_lpof = solve(
 )
 
 nx, nu = 6, 4
-N = 20
+N = 40
 tf = 2.6 
 times = LinRange(0.0, tf, N)
 
@@ -110,9 +110,9 @@ prob = DirectOCP.ImpulsiveProblem(
 # max control magnitude
 @constraint(prob.model, max_control_magnitude_constraint[k in 1:N], prob.model[:u][4,k] <= umax)
 
-set_optimizer_attribute(prob.model, "tol", 1e-4)
-set_optimizer_attribute(prob.model, "constr_viol_tol", 1e-8)
-set_optimizer_attribute(prob.model, "max_iter", 100)
+set_optimizer_attribute(prob.model, "tol", 1e-6)
+set_optimizer_attribute(prob.model, "constr_viol_tol", 1e-10)
+set_optimizer_attribute(prob.model, "max_iter", 1000)
 if get_plot
     set_optimizer_attribute(prob.model, "print_level", 5)
 else
@@ -134,6 +134,7 @@ if get_plot
 
     # plot
     fig = Figure(size=(600,500))
+    Label(fig[0,1:2], text = "Objective = $(objective_value(prob.model))", fontsize=18)
     ax3d = Axis3(fig[1,1]; aspect=:data)
     lines!(Array(sol_lpo0)[1,:], Array(sol_lpo0)[2,:], Array(sol_lpo0)[3,:], color=:grey)
     lines!(Array(sol_lpof)[1,:], Array(sol_lpof)[2,:], Array(sol_lpof)[3,:], color=:grey)
