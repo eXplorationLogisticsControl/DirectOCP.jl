@@ -2,8 +2,9 @@
   <img src="docs/assets/logo.png" alt="HighFidelityEphemerisModel.jl Logo" width="75%"/>
 </p>
 
-
-![test workflow](https://github.com/eXplorationLogisticsControl/DirectOCP.jl/actions/workflows/test.yml/badge.svg)
+<p align="center">
+  <img src="https://github.com/eXplorationLogisticsControl/DirectOCP.jl/actions/workflows/test.yml/badge.svg" alt="test workflow"/>
+</p>
 
 Transcription of nonlinear optimal control problem (NOCP) for direct method
 
