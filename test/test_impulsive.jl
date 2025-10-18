@@ -1,6 +1,6 @@
-"""CR3BP impulsive problem"""
+"""Test with CR3BP, impulsive problem"""
 
-using GLMakie
+# using GLMakie     # import manually if runnig script as example
 using Ipopt
 using JuMP
 using LinearAlgebra
@@ -16,25 +16,18 @@ function test_impulsive_problem(;get_plot::Bool = false)
     MU = 500.0      # kg
     VU = DU/TU      # km/s
 
-    struct ODEParams
-        μ::Float64
-        function ODEParams(μ::Float64)
-            new(μ)
-        end
-    end
-
-    params = ODEParams(μ)
+    params = Dict(:μ => μ)
 
     function eom!(drv, rv, p, t)
         x, y, z = rv[1:3]
         vx, vy, vz = rv[4:6]
-        r1 = sqrt( (x+p.μ)^2 + y^2 + z^2 );
-        r2 = sqrt( (x-1+p.μ)^2 + y^2 + z^2 );
+        r1 = sqrt( (x+p[:μ])^2 + y^2 + z^2 );
+        r2 = sqrt( (x-1+p[:μ])^2 + y^2 + z^2 );
         drv[1:3] = rv[4:6]
         # derivatives of velocities
-        drv[4] =  2*vy + x - ((1-p.μ)/r1^3)*(p.μ+x) + (p.μ/r2^3)*(1-p.μ-x);
-        drv[5] = -2*vx + y - ((1-p.μ)/r1^3)*y - (p.μ/r2^3)*y;
-        drv[6] = -((1-p.μ)/r1^3)*z - (p.μ/r2^3)*z;
+        drv[4] =  2*vy + x - ((1-p[:μ])/r1^3)*(p[:μ]+x) + (p[:μ]/r2^3)*(1-p[:μ]-x);
+        drv[5] = -2*vx + y - ((1-p[:μ])/r1^3)*y - (p[:μ]/r2^3)*y;
+        drv[6] = -((1-p[:μ])/r1^3)*z - (p[:μ]/r2^3)*z;
         return
     end
     
@@ -100,11 +93,12 @@ function test_impulsive_problem(;get_plot::Bool = false)
     set_optimizer_attribute(prob.model, "tol", 1e-4)
     set_optimizer_attribute(prob.model, "constr_viol_tol", 1e-8)
     set_optimizer_attribute(prob.model, "max_iter", 100)
-    set_optimizer_attribute(prob.model, "print_level", 5)
+    set_optimizer_attribute(prob.model, "print_level", 0)   # at test, we set Ipopt to be silent
     set_silent(prob.model)
 
     # solve
     optimize!(prob.model)
+    xs_opt, us_opt = value.(prob.model[:x]), value.(prob.model[:u])
     g_dynamics = DirectNOCP.get_dynamics_residuals(prob, times, xs_opt, us_opt)  # evaluate dynamics residuals
 
     @test termination_status(prob.model) == LOCALLY_SOLVED
