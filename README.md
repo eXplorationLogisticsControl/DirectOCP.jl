@@ -32,6 +32,7 @@ $$
 $$
 
 with additional constraints
+
 $$
 \begin{aligned}
 u_{x,k}^2 + u_{y,k}^2 + u_{z,k}^2 &= 1
