@@ -11,5 +11,6 @@ abstract type OptimalControlProblem end
 
 include("memoization.jl")
 include("impulsive_problem.jl")
+include("continuous_problem.jl")
 
 end # module DirectOCP
