@@ -120,7 +120,7 @@ function test_continuous_problem(;get_plot::Bool = false)
         sols_ig = DirectOCP.get_trajectory(prob, times, xbar, ubar)
 
         # plot
-        fig = Figure(size=(600,500))
+        fig = Figure(size=(800,500))
         Label(fig[0,1:2], text = "Objective = $(objective_value(prob.model))", fontsize=18)
         ax3d = Axis3(fig[1,1]; aspect=:data)
         lines!(Array(sol_lpo0)[1,:], Array(sol_lpo0)[2,:], Array(sol_lpo0)[3,:], color=:grey)
@@ -131,15 +131,16 @@ function test_continuous_problem(;get_plot::Bool = false)
         
         xs_opt, us_opt = value.(prob.model[:x]), value.(prob.model[:u])
         sols_opt = DirectOCP.get_trajectory(prob, times, xs_opt, us_opt)
-        for _sol in sols_opt
-            lines!(Array(_sol)[1,:], Array(_sol)[2,:], Array(_sol)[3,:], color=:midnightblue)
+        for (k, _sol) in enumerate(sols_opt)
+            lines!(Array(_sol)[1,:], Array(_sol)[2,:], Array(_sol)[3,:], linewidth=2.0,
+                color=us_opt[4,k] > 1e-6 ? :red : :midnightblue)
         end
 
         # plot control impulses
         ax_u = Axis(fig[1,2])
-        stairs!(ax_u, times, [us_opt[4,:]; 0.0], label="||u||", linewidth=2.0, color = :black, step=:post)
+        stairs!(ax_u, [0.0; times], [0.0; us_opt[4,:]; 0.0], label="||u||", linewidth=2.0, color = :black, step=:post)
         for i in 1:3
-            stairs!(ax_u, times, [us_opt[i,:] .* us_opt[4,:]; 0.0], label="u[$i]", linewidth=1.0, step=:post)
+            stairs!(ax_u, [0.0; times], [0.0; us_opt[i,:] .* us_opt[4,:]; 0.0], label="u[$i]", linewidth=1.0, step=:post)
         end
         hlines!(ax_u, [-umax, umax], color=:grey, linestyle=:dash)
         axislegend(ax_u, position=:cc)
