@@ -13,15 +13,9 @@ if !@isdefined get_plot
     get_plot = true
 end
 
-
 function test_continuous_problem(;get_plot::Bool = false)
     # parameters for ODE
     μ = 1.215058560962404e-02
-    DU = 389703     # km
-    TU = 382981     # sec
-    MU = 500.0      # kg
-    VU = DU/TU      # km/s
-
     params = Dict(:μ => μ)
 
     function eom!(drv, rv, p, t)
@@ -160,6 +154,8 @@ function test_continuous_problem(;get_plot::Bool = false)
         hlines!(ax_u, [-umax, umax], color=:grey, linestyle=:dash)
         axislegend(ax_u, position=:cc)
         display(fig)
+
+        save(joinpath(@__DIR__, "continuous_problem.png"), fig; px_per_unit=5)
     end
 end
 

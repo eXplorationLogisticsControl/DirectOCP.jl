@@ -12,8 +12,41 @@ pkg> dev https://github.com/eXplorationLogisticsControl/DirectOCP.jl.git
 
 ## Quick start
 
+
 ### Continuous-time dynamics
 
+We consider a problem with continuous-time dynamics and zeroth-order hold control, enforced via multiple shooting
+
+$$
+\begin{aligned}
+\boldsymbol{x}_{k+1} &= \boldsymbol{x}_k + \int_{t_k}^{t_{k+1}} \boldsymbol{f}(\boldsymbol{x}(t),t) + \boldsymbol{g}(\boldsymbol{x}(t),\boldsymbol{u}(t),t) \mathrm{d}t
+\\
+\boldsymbol{u}(t) &= \boldsymbol{u}_k  \quad t_k \leq t \leq t_{k+1}
+\end{aligned}
+$$
+
+The control is parametrized in terms of the control direction and magnitude,
+
+$$
+\boldsymbol{u}_k = \alpha_k \begin{bmatrix} u_{x,k} \\ u_{y,k} \\ u_{z,k} \end{bmatrix}
+$$
+
+with additional constraints
+$$
+\begin{aligned}
+u_{x,k}^2 + u_{y,k}^2 + u_{z,k}^2 &= 1
+\\
+0 \leq \alpha_k \leq u_{\max}
+\end{aligned}
+$$
+
+The fuel-minimum solution is obtained with the objective
+
+$$
+\min \quad \sum_{k=1}^{N-1} \alpha_k
+$$
+
+Let's demonstrate! We first import & define the equations of motion (without control, as of now): 
 
 ```julia
 using GLMakie
@@ -22,9 +55,7 @@ using JuMP
 using LinearAlgebra
 using OrdinaryDiffEq
 using DirectOCP
-```
 
-```julia
 # define ODE parameters
 params = Dict(:μ => μ)
 
@@ -41,6 +72,8 @@ function eom!(drv, rv, p, t)
     return
 end
 ```
+
+We now define the boundary conditions, then define initial guess for the state and control histories, `xbar` and `ubar`
 
 ```julia
 # initial solution
@@ -174,3 +207,5 @@ hlines!(ax_u, [-umax, umax], color=:grey, linestyle=:dash)
 axislegend(ax_u, position=:cc)
 display(fig)
 ```
+
+<img src="test/continuous_problem.png" alt="Continuous Problem Solution" width="600"/>
