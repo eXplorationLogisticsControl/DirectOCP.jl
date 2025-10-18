@@ -9,7 +9,7 @@ mutable struct ImpulsiveProblem <: OptimalControlProblem
     model::Model
     times::Union{Vector,LinRange}
     base_ode::ODEProblem
-    dfdu::Function
+    gfun::Function
     ode_params
     ode_method
     ode_reltol
@@ -21,12 +21,9 @@ function get_shooting_func(prob::ImpulsiveProblem, tspan, control_parametrizatio
 
     if control_parametrization == :DirMag
         function shooting_constraint(xu::T...) where {T<:Real}
-            x_k = [xu[i] for i in 1:prob.nx]
-            uhat_k = [xu[i] for i in prob.nx+1:prob.nx+prob.nu-1]
-            umag_k = xu[prob.nx+prob.nu]
             _ode_modified = remake(
                 prob.base_ode,
-                u0 = x_k + prob.dfdu(x_k, tspan[1]) * uhat_k * umag_k,
+                u0 = [xu[i] for i in 1:prob.nx] + prob.gfun(tspan, xu...),
                 tspan=tspan,
             )
             sol = solve(_ode_modified, prob.ode_method; reltol=prob.ode_reltol, abstol=prob.ode_abstol)
@@ -46,7 +43,9 @@ function ImpulsiveProblem(
     times::Union{Vector,LinRange},
     xbar::Matrix,
     ubar::Matrix,
-    dfdu::Function = (x,t) -> [zeros(3,3); I(3)],
+    gfun::Function,
+    bc_implicit_initial::Union{Function, Nothing},
+    bc_implicit_final::Union{Function, Nothing},
     ode_params = nothing;
     ode_method = Tsit5(),
     ode_reltol = 1e-12,
@@ -73,7 +72,7 @@ function ImpulsiveProblem(
         Model(optimizer),
         times,
         base_ode,
-        dfdu,
+        gfun,
         ode_params,
         ode_method,
         ode_reltol,
@@ -87,12 +86,12 @@ function ImpulsiveProblem(
     # memoize dynamics function
     for k in 1:N-1
         shooting_constraint = get_shooting_func(prob, (times[k], times[k+1]), control_parametrization)
-        memoized_shooting_func = memoize(shooting_constraint, nx)   # second argument is number of outputs
+        memoized_shooting_fun = memoize(shooting_constraint, nx)   # second argument is number of outputs
 
         # add nonlinear operator for dynamics
         for i in 1:nx
             op = add_nonlinear_operator(
-                prob.model, nx+nu, memoized_shooting_func[i];
+                prob.model, nx+nu, memoized_shooting_fun[i];
                 name = Symbol("dynamics_k$(k)_i$(i)"),
             )
             @constraint(prob.model, x[i,k+1] - op([x[:,k]; u[:,k]]...)== 0)
@@ -106,18 +105,19 @@ function ImpulsiveProblem(
         @constraint(prob.model, constraint_mag_lower_bound[k=1:N], u[4,k] >= 0.0)
     end
 
+    # append boundary conditions
+    if !isnothing(bc_implicit_initial)
+        # TODO
+    end
+    if !isnothing(bc_implicit_final)
+        # TODO
+    end
+
     # objective
     @objective(prob.model, Min, sum(u[4,:]))
     return prob
 end
 
-
-"""Append boundary conditions to the problem"""
-function append_boundary_conditions!(prob::ImpulsiveProblem, x0, xf)
-    @assert length(x0) == length(xf) == prob.nx
-    @constraint(prob.model, prob.model[:x][:,1] == x0)
-    @constraint(prob.model, prob.model[:x][:,end] + prob.dfdu(prob.model[:x][:,end], prob.times[end]) * prob.model[:u][1:prob.nu-1,end] * prob.model[:u][prob.nu,end] == xf)
-end
 
 
 """Extract trajectory from impulsive problem"""
@@ -126,7 +126,7 @@ function get_trajectory(prob::ImpulsiveProblem, times, xs, us)
     for (k,t) in enumerate(times[1:end-1])
         _ode_modified = remake(
             prob.base_ode,
-            u0=xs[:,k] + prob.dfdu(xs[:,k], t) * us[1:prob.nu-1,k] * us[prob.nu,k],
+            u0=xs[:,k] + prob.gfun((t,times[k+1]), [xs[:,k]; us[:,k]]...),
             tspan=(t, times[k+1]),
         )
         sol = solve(_ode_modified, prob.ode_method; reltol=prob.ode_reltol, abstol=prob.ode_abstol)
@@ -141,7 +141,7 @@ function get_dynamics_residuals(prob::ImpulsiveProblem, times, xs, us)
     for (k,t) in enumerate(times[1:end-1])
         _ode_modified = remake(
             prob.base_ode,
-            u0=xs[:,k] + prob.dfdu(xs[:,k], t) * us[1:prob.nu-1,k] * us[prob.nu,k],
+            u0=xs[:,k] + prob.gfun((t,times[k+1]), [xs[:,k]; us[:,k]]...),
             tspan=(t, times[k+1]),
         )
         sol = solve(_ode_modified, prob.ode_method; reltol=prob.ode_reltol, abstol=prob.ode_abstol)
