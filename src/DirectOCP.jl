@@ -1,4 +1,4 @@
-module DirectNOCP
+module DirectOCP
 
 
 using JuMP
@@ -7,9 +7,9 @@ using OrdinaryDiffEq
 using Printf
 
 
-abstract type DirectNonlinearOptimalControlProblem end
+abstract type OptimalControlProblem end
 
 include("memoization.jl")
 include("impulsive_problem.jl")
 
-end # module DirectNOCP
+end # module DirectOCP

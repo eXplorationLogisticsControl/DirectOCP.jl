@@ -2,7 +2,7 @@
 
 using Test
 
-include(joinpath(@__DIR__, "../src/DirectNOCP.jl"))
+include(joinpath(@__DIR__, "../src/DirectOCP.jl"))
 
 get_plot = false
 

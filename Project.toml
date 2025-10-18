@@ -1,4 +1,4 @@
-name = "DirectNOCP"
+name = "DirectOCP"
 uuid = "95f4e061-4755-4e16-b48c-d5dc5ec98769"
 authors = ["Yuri <yuri.shimane@gmail.com>"]
 version = "0.1.0"

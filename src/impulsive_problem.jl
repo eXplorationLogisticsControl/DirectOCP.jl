@@ -1,7 +1,7 @@
 """Impulsive optimization problem"""
 
 
-mutable struct ImpulsiveProblem <: DirectNonlinearOptimalControlProblem
+mutable struct ImpulsiveProblem <: OptimalControlProblem
     N::Int
     nx::Int
     nu::Int

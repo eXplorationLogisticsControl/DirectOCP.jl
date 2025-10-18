@@ -6,7 +6,7 @@ using JuMP
 using LinearAlgebra
 using OrdinaryDiffEq
 
-include(joinpath(@__DIR__, "../src/DirectNOCP.jl"))
+include(joinpath(@__DIR__, "../src/DirectOCP.jl"))
 
 function test_impulsive_problem(;get_plot::Bool = false)
     # parameters for ODE
@@ -78,7 +78,7 @@ function test_impulsive_problem(;get_plot::Bool = false)
     dfdu = (x,t) -> [zeros(3,3); I(3)]
 
     # construct problem
-    prob = DirectNOCP.ImpulsiveProblem(
+    prob = DirectOCP.ImpulsiveProblem(
         eom!,
         Ipopt.Optimizer,
         times,
@@ -87,19 +87,23 @@ function test_impulsive_problem(;get_plot::Bool = false)
         dfdu,
         params,
     )
-    DirectNOCP.append_boundary_conditions!(prob, rv0, rvf)
+    DirectOCP.append_boundary_conditions!(prob, rv0, rvf)
     @constraint(prob.model, max_control_magnitude_constraint[k in 1:N], prob.model[:u][4,k] <= umax)
 
     set_optimizer_attribute(prob.model, "tol", 1e-4)
     set_optimizer_attribute(prob.model, "constr_viol_tol", 1e-8)
     set_optimizer_attribute(prob.model, "max_iter", 100)
-    set_optimizer_attribute(prob.model, "print_level", 0)   # at test, we set Ipopt to be silent
+    if get_plot
+        set_optimizer_attribute(prob.model, "print_level", 1)
+    else
+        set_optimizer_attribute(prob.model, "print_level", 0)   # at test, we set Ipopt to be silent
+    end
     set_silent(prob.model)
 
     # solve
     optimize!(prob.model)
     xs_opt, us_opt = value.(prob.model[:x]), value.(prob.model[:u])
-    g_dynamics = DirectNOCP.get_dynamics_residuals(prob, times, xs_opt, us_opt)  # evaluate dynamics residuals
+    g_dynamics = DirectOCP.get_dynamics_residuals(prob, times, xs_opt, us_opt)  # evaluate dynamics residuals
 
     @test termination_status(prob.model) == LOCALLY_SOLVED
     @test maximum(abs.(g_dynamics)) <= 1e-8
@@ -107,7 +111,7 @@ function test_impulsive_problem(;get_plot::Bool = false)
     
     if get_plot
         # construct trajectory initial guess
-        sols_ig = DirectNOCP.get_trajectory(prob, times, xbar, ubar)
+        sols_ig = DirectOCP.get_trajectory(prob, times, xbar, ubar)
 
         # plot
         fig = Figure(size=(600,500))
@@ -119,7 +123,7 @@ function test_impulsive_problem(;get_plot::Bool = false)
         end
 
         xs_opt, us_opt = value.(prob.model[:x]), value.(prob.model[:u])
-        sols_opt = DirectNOCP.get_trajectory(prob, times, xs_opt, us_opt)
+        sols_opt = DirectOCP.get_trajectory(prob, times, xs_opt, us_opt)
         for _sol in sols_opt
             lines!(Array(_sol)[1,:], Array(_sol)[2,:], Array(_sol)[3,:], color=:midnightblue)
         end
