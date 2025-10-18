@@ -20,26 +20,18 @@ TU = 382981     # sec
 MU = 500.0      # kg
 VU = DU/TU      # km/s
 
-mutable struct ControlParams
-    μ::Float64
-    u::Vector
-    function ControlParams(μ::Float64)
-        new(μ, zeros(4))
-    end
-end
-
-params = ControlParams(μ)
+params = Dict(:μ => μ)
 
 function eom!(drv, rv, p, t)
     x, y, z = rv[1:3]
     vx, vy, vz = rv[4:6]
-    r1 = sqrt( (x+p.μ)^2 + y^2 + z^2 );
-    r2 = sqrt( (x-1+p.μ)^2 + y^2 + z^2 );
+    r1 = sqrt( (x+p[:μ])^2 + y^2 + z^2 );
+    r2 = sqrt( (x-1+p[:μ])^2 + y^2 + z^2 );
     drv[1:3] = rv[4:6]
     # derivatives of velocities
-    drv[4] =  2*vy + x - ((1-p.μ)/r1^3)*(p.μ+x) + (p.μ/r2^3)*(1-p.μ-x) + p.u[1]
-    drv[5] = -2*vx + y - ((1-p.μ)/r1^3)*y       - (p.μ/r2^3)*y         + p.u[2]
-    drv[6] =           - ((1-p.μ)/r1^3)*z       - (p.μ/r2^3)*z         + p.u[3]
+    drv[4] =  2*vy + x - ((1-p[:μ])/r1^3)*(p[:μ]+x) + (p[:μ]/r2^3)*(1-p[:μ]-x);
+    drv[5] = -2*vx + y - ((1-p[:μ])/r1^3)*y - (p[:μ]/r2^3)*y;
+    drv[6] = -((1-p[:μ])/r1^3)*z - (p[:μ]/r2^3)*z;
     return
 end
 
@@ -150,7 +142,7 @@ if get_plot
     for _sol in sols_ig
         lines!(Array(_sol)[1,:], Array(_sol)[2,:], Array(_sol)[3,:], color=:skyblue)
     end
-    
+
     xs_opt, us_opt = value.(prob.model[:x]), value.(prob.model[:u])
     sols_opt = DirectOCP.get_trajectory(prob, times, xs_opt, us_opt)
     for _sol in sols_opt
