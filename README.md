@@ -1,4 +1,7 @@
-# DirectOCP.jl
+<p align="center">
+  <img src="docs/assets/logo.png" alt="HighFidelityEphemerisModel.jl Logo" width="75%"/>
+</p>
+
 
 ![test workflow](https://github.com/eXplorationLogisticsControl/DirectOCP.jl/actions/workflows/test.yml/badge.svg)
 
